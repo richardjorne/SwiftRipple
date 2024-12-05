@@ -1,112 +1,126 @@
-// Created by Richard Jorne 07/16 2024
+//
+//  RippleButton.swift
+//  SwiftRipple
+//
+//  Created by Richard Jorne on 2024/7/16.
+//
 
 import SwiftUI
+import AllTouchGestureModifier
 
 public struct RippleButton<Content: View, Background: View, Ripple: View>: View {
     
-    init(@ViewBuilder content: () -> Content, @ViewBuilder background: () -> Background, @ViewBuilder ripple: @escaping () -> Ripple, action: @escaping () -> Void, appearAnimation: Animation, disappearAnimation: Animation, ripplePercent: CGFloat?) {
-        self.content = content()
-        self.background = background()
-        self.ripple = ripple
+    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearAnimation: Animation, disappearAnimation: Animation, ripplePercent: CGFloat?) {
+        self.content = content
+        self.background = background
         self.action = action
-        self.appearAnimation = appearAnimation
-        self.disappearAnimation = disappearAnimation
-        self.ripplePercent = ripplePercent
+        self.ripple = SwiftRipple(ripple: ripple, appearAnimation: appearAnimation, disappearAnimation: disappearAnimation, ripplePercent: ripplePercent)
     }
     
-    init(@ViewBuilder content: () -> Content, @ViewBuilder background: () -> Background, @ViewBuilder ripple: @escaping () -> Ripple, action: @escaping () -> Void, appearDuration: Double = 0.4, disappearDuration: Double = 2, ripplePercent: CGFloat?){
-        self.content = content()
-        self.background = background()
-        self.ripple = ripple
+    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearDuration: Double = 0.4, disappearDuration: Double = 0.4, ripplePercent: CGFloat?){
+        self.content = content
+        self.background = background
         self.action = action
-        self.appearAnimation = .easeOut(duration: 0.5)
-        self.disappearAnimation = .linear(duration: disappearDuration)
-        self.ripplePercent = ripplePercent
+        self.ripple = SwiftRipple(ripple: ripple, appearAnimation: .easeOut(duration: appearDuration), disappearAnimation: .linear(duration: disappearDuration), ripplePercent: ripplePercent)
     }
     
-    private var content: Content
-    private var background: Background
-    private var ripple: () -> Ripple
-    private var action: (()->Void)
-    private var appearAnimation: Animation
-    private var disappearAnimation: Animation
-    private var ripplePercent: CGFloat?
+    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, action: @escaping (CGPoint) -> Void, ripple: SwiftRipple<Ripple>){
+        self.content = content
+        self.background = background
+        self.action = action
+        self.ripple = ripple
+    }
     
-    @State private var rippleDiameter: CGFloat = 50.0
+    private var content: (Bool, CGPoint) -> Content
+    private var background: (Bool, CGPoint) -> Background
+    private var action: ((CGPoint)->Void)
+    private var ripple: SwiftRipple<Ripple>
+    
     @State private var disabled: Bool = false
-    @State private var ripples: [RippleParameter] = []
+    @State private var tapped: Bool = false
+    @State private var pos: CGPoint = .zero
+    @State private var state: TouchState = .touchUp
     
     public var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                ZStack {
-                    Color.primary
-                    background
-                    content
-                }.opacity(disabled ? 0.5 : 1)
-                Color.primary.opacity(disabled ? 0.5 : 0)
-            }
-            .onAppear(perform: {
-                if let ripplePercent = ripplePercent {
-                    self.rippleDiameter = max(geo.size.width,geo.size.height)*ripplePercent
-                }
-            })
-            .overlay {
-                ForEach(ripples, id: (\.id)) { r in
-                    ripple()
-                        .frame(width: rippleDiameter, height: rippleDiameter, alignment: .center)
-                        .clipShape(.circle)
-                        .position(x: r.pos.x, y: r.pos.y)
-                        .transition(.asymmetric(insertion: .scale(scale: 0.3, anchor: .init(x: r.pos.x/geo.size.width, y: r.pos.y/geo.size.height)).animation(.easeOut(duration: 0.5)), removal: .opacity.animation(.linear)))
-                }
-            }
-            .pressPosition(beginAction: { pos in
-                withAnimation {
-                    ripples.append(RippleParameter(pos: pos))
-                }
-            }, endAction: { _ in
-                withAnimation {
-                    if !ripples.isEmpty {
-                        _ = ripples.removeFirst()
-                    }
-                }
-            })
-            .animation(.easeInOut(duration: 0.3), value: disabled)
+        ZStack {
+            background(tapped, pos)
+            content(tapped, pos)
+            ripple
+        }
+        .animation(nil, value: tapped)
+        .fixedSize()
+        .opacity(disabled ? 0.6 : 1)
+        .animation(.easeInOut(duration: 0.4), value: tapped)
+        .allTouchGesture { pos in
+            tapped = true
+        } onConfirm: { pos in
+            action(pos)
+        } onTouchUp: { _ in
+            tapped = false
+        }
+    }
+    
+    private func stateText(_ state: TouchState) -> String {
+        switch state {
+        case .touchDown:
+            return "touchDown"
+        case .confirm:
+            return "confirm"
+        case .touchUp:
+            return "touchUp"
+        case .cancel:
+            return "cancel"
+        case .dragging:
+            return "dragging"
+        case .dragInside:
+            return "dragInside"
+        case .dragOutside:
+            return "dragOutside"
+        case .dragEnter:
+            return "dragEnter"
+        case .dragExit:
+            return "dragExit"
         }
     }
 }
 
 
-struct RButtonPreviewProvider: View {
+struct RippleButtonPreviewProvider: View {
+    @State var pressing: Bool = false
+    @State var n1: Float = 3
+    @State var n2: Float = 2
     var body: some View {
-        ZStack {
-            RippleButton(content: {
-                Text("Happy")
-            }, background: {
-                Color.orange
-            }, ripple: {
-                Color.yellow.opacity(0.6)
-            }, action: {
+        VStack {
+            Text("\(String(format: "%.4f", n1))/\(String(format: "%.4f", n2))=\(String(format: "%.4f", n1/n2))")
+            RippleButton(content: { pressing, _ in
+                Text("Happy \(pressing ? "Impressed " : "Unpressed")")
+                    .animation(nil, value: pressing)
+                    .padding(.all)
+            }, background: { pressing, _ in
+                Color(red: 255.0/256.0, green: 158.0/256.0, blue: (pressing ? 105.0 : 11.0)/256.0)
+                    .animation(.linear, value: pressing)
                 
-            }, ripplePercent: 1)
+                if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *) {
+                    Color.clear
+                        .onChange(of: pressing) { newValue in
+                            self.pressing = newValue
+                        }
+                }
+            }, ripple: {_ in 
+                Color.yellow.opacity(0.6).clipShape(.circle)
+            }, action: {_ in 
+                n1 = Float.random(in: -999...999)
+                n2 = Float.random(in: 1...999)
+            }, ripplePercent: 0.7)
             .cornerRadius(14)
-            .frame(width: 120, height: 50, alignment: .center)
+            .scaleEffect(x: pressing ? 0.94 : 1.0, y: pressing ? 0.94 : 1.0, anchor: .center)
+            .animation(.easeInOut(duration: 0.1), value: pressing)
         }
         .frame(width: 300, height: 300, alignment: .center)
     }
 }
 
-fileprivate class RippleParameter: ObservableObject, Identifiable {
-    
-    init(pos: CGPoint) {
-        self.pos = pos
-    }
-    
-    var id = UUID()
-    var pos: CGPoint
-}
-
 #Preview {
-    RButtonPreviewProvider()
+    RippleButtonPreviewProvider()
 }
 

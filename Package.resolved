@@ -1,0 +1,15 @@
+{
+  "originHash" : "7ab0c82d7bc5178bea4da1be1364a26fcb66bfb327d70f7b7534eee32028c67b",
+  "pins" : [
+    {
+      "identity" : "alltouchgesturemodifier",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/richardjorne/AllTouchGestureModifier",
+      "state" : {
+        "branch" : "main",
+        "revision" : "f854468b0aecfdd74ff4f3c5650065f21dcefcd9"
+      }
+    }
+  ],
+  "version" : 3
+}
