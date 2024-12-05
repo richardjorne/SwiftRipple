@@ -10,18 +10,18 @@ import AllTouchGestureModifier
 
 public struct RippleButton<Content: View, Background: View, Ripple: View>: View {
     
-    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearAnimation: Animation, disappearAnimation: Animation, ripplePercent: CGFloat?) {
+    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearAnimation: Animation, disappearAnimation: Animation, ripplePercent: CGFloat?, disappearApproach: RippleDisappearApproach = .extendOpacityDisappear) {
         self.content = content
         self.background = background
         self.action = action
-        self.ripple = SwiftRipple(ripple: ripple, appearAnimation: appearAnimation, disappearAnimation: disappearAnimation, ripplePercent: ripplePercent)
+        self.ripple = SwiftRipple(ripple: ripple, appearAnimation: appearAnimation, disappearAnimation: disappearAnimation, ripplePercent: ripplePercent, disappearApproach: disappearApproach)
     }
     
-    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearDuration: Double = 0.4, disappearDuration: Double = 0.4, ripplePercent: CGFloat?){
+    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearDuration: Double = 0.4, disappearDuration: Double = 0.4, ripplePercent: CGFloat?, disappearApproach: RippleDisappearApproach = .extendOpacityDisappear) {
         self.content = content
         self.background = background
         self.action = action
-        self.ripple = SwiftRipple(ripple: ripple, appearAnimation: .easeOut(duration: appearDuration), disappearAnimation: .linear(duration: disappearDuration), ripplePercent: ripplePercent)
+        self.ripple = SwiftRipple(ripple: ripple, appearAnimation: .easeOut(duration: appearDuration), disappearAnimation: .linear(duration: disappearDuration), ripplePercent: ripplePercent, disappearApproach: disappearApproach)
     }
     
     public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, action: @escaping (CGPoint) -> Void, ripple: SwiftRipple<Ripple>){
