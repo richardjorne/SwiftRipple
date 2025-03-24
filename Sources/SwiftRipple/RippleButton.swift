@@ -10,31 +10,35 @@ import AllTouchGestureModifier
 
 public struct RippleButton<Content: View, Background: View, Ripple: View>: View {
     
-    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearAnimation: Animation, disappearAnimation: Animation, ripplePercent: CGFloat?, disappearApproach: RippleDisappearApproach = .extendOpacityDisappear) {
+    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearAnimation: Animation, disappearAnimation: Animation, ripplePercent: CGFloat?, disappearApproach: RippleDisappearApproach = .extendOpacityDisappear, useIdealSize: Bool = true) {
         self.content = content
         self.background = background
         self.action = action
         self.ripple = SwiftRipple(ripple: ripple, appearAnimation: appearAnimation, disappearAnimation: disappearAnimation, ripplePercent: ripplePercent, disappearApproach: disappearApproach)
+        self.useIdealSize = useIdealSize
     }
     
-    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearDuration: Double = 0.4, disappearDuration: Double = 0.4, ripplePercent: CGFloat?, disappearApproach: RippleDisappearApproach = .extendOpacityDisappear) {
+    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, @ViewBuilder ripple: @escaping (CGPoint) -> Ripple, action: @escaping (CGPoint) -> Void, appearDuration: Double = 0.4, disappearDuration: Double = 0.4, ripplePercent: CGFloat?, disappearApproach: RippleDisappearApproach = .extendOpacityDisappear, useIdealSize: Bool = true) {
         self.content = content
         self.background = background
         self.action = action
         self.ripple = SwiftRipple(ripple: ripple, appearAnimation: .easeOut(duration: appearDuration), disappearAnimation: .linear(duration: disappearDuration), ripplePercent: ripplePercent, disappearApproach: disappearApproach)
+        self.useIdealSize = useIdealSize
     }
     
-    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, action: @escaping (CGPoint) -> Void, ripple: SwiftRipple<Ripple>){
+    public init(@ViewBuilder content: @escaping (Bool, CGPoint) -> Content, @ViewBuilder background: @escaping (Bool, CGPoint) -> Background, action: @escaping (CGPoint) -> Void, ripple: SwiftRipple<Ripple>, useIdealSize: Bool = true){
         self.content = content
         self.background = background
         self.action = action
         self.ripple = ripple
+        self.useIdealSize = useIdealSize
     }
     
     private var content: (Bool, CGPoint) -> Content
     private var background: (Bool, CGPoint) -> Background
     private var action: ((CGPoint)->Void)
     private var ripple: SwiftRipple<Ripple>
+    private var useIdealSize: Bool
     
     @State private var disabled: Bool = false
     @State private var tapped: Bool = false
@@ -48,7 +52,7 @@ public struct RippleButton<Content: View, Background: View, Ripple: View>: View 
             ripple
         }
         .animation(nil, value: tapped)
-        .fixedSize()
+        .fixedSizeIf(useIdealSize)
         .opacity(disabled ? 0.6 : 1)
         .animation(.easeInOut(duration: 0.4), value: tapped)
         .allTouchGesture { pos, size in
@@ -124,3 +128,20 @@ struct RippleButtonPreviewProvider: View {
     RippleButtonPreviewProvider()
 }
 
+fileprivate struct ConditionalFixedSize: ViewModifier {
+    let isFixed: Bool
+    
+    func body(content: Content) -> some View {
+        if isFixed {
+            content.fixedSize()
+        } else {
+            content
+        }
+    }
+}
+
+fileprivate extension View {
+    func fixedSizeIf(_ isFixed: Bool) -> some View {
+        self.modifier(ConditionalFixedSize(isFixed: isFixed))
+    }
+}
