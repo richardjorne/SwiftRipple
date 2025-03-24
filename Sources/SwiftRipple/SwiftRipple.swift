@@ -56,12 +56,12 @@ public struct SwiftRipple<Ripple: View>: View {
                     self.rippleDiameter = max(geometry.size.width, geometry.size.height) * ripplePercent
                 }
             }
-            .allTouchGesture(onTouchDown: { pos in
+            .allTouchGesture(onTouchDown: { pos, size in
                 self.pos = pos
                 withAnimation {
                     ripples.append(RippleParameter(pos: pos, diameter: self.rippleDiameter))
                 }
-            }, onTouchUp: { _ in
+            }, onTouchUp: { _, _ in
                 withAnimation {
                     if !ripples.isEmpty {
                         _ = ripples.removeFirst()

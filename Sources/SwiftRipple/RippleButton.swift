@@ -51,11 +51,11 @@ public struct RippleButton<Content: View, Background: View, Ripple: View>: View 
         .fixedSize()
         .opacity(disabled ? 0.6 : 1)
         .animation(.easeInOut(duration: 0.4), value: tapped)
-        .allTouchGesture { pos in
+        .allTouchGesture { pos, size in
             tapped = true
-        } onConfirm: { pos in
+        } onConfirm: { pos, size in
             action(pos)
-        } onTouchUp: { _ in
+        } onTouchUp: { _, _ in
             tapped = false
         }
     }
